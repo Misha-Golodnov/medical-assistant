@@ -24,11 +24,3 @@ Medical Assistant API - это сервис поддержки принятия 
 - **Векторная БД**: Chroma
 - **DevOps**: Docker, GitHub Actions, pytest, flake8
 
-
-
-### Локальная установка
-
-1. **Клонируйте репозиторий**
-```bash
-git clone https://github.com/your-username/medical-assistant-api.git
-cd medical-assistant-api
