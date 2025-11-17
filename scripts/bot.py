@@ -296,9 +296,10 @@ class MedicalAssistantBot:
         # Выполнение RAG pipeline
         result = self.rag.ask(
             query=query,
-            n_results=50,
-            similarity_threshold=0.1,
-            temperature=0.3,
+            n_results=20,  # ⚡ Уменьшено с 30 до 20 для максимальной скорости
+            similarity_threshold=0.25,  # ⚡ Повышен порог - только самое релевантное
+            temperature=0.2,  # ⚡ Более детерминированные ответы
+            max_tokens=400,  # ⚡ Ограничение длины ответа для скорости (400 токенов ≈ 5-7 секунд)
             filter_icd_codes=filter_icd_codes,
             user_id=user_id,
             username=username

@@ -52,7 +52,7 @@ class RAGSystem:
         db_url: Optional[str] = None,
         openai_api_key: Optional[str] = None,
         embedding_model: str = "text-embedding-3-large",
-        chat_model: str = "gpt-4o",
+        chat_model: str = "gpt-4o-mini",  # ⚡ Изменено с gpt-4o на gpt-4o-mini для скорости
         max_context_tokens: int = 32000
     ):
         """
@@ -315,7 +315,7 @@ class RAGSystem:
         query: str,
         context: str,
         temperature: float = 0.3,
-        max_tokens: int = 2000
+        max_tokens: int = 500
     ) -> Dict[str, Any]:
         """
         Генерация ответа через GPT-4o
@@ -457,6 +457,7 @@ class RAGSystem:
         n_results: int = 10,
         similarity_threshold: float = 0.5,
         temperature: float = 0.3,
+        max_tokens: int = 500,
         filter_cr_ids: Optional[List[str]] = None,
         filter_icd_codes: Optional[List[str]] = None,
         user_id: Optional[int] = None,
@@ -470,6 +471,7 @@ class RAGSystem:
             n_results: Количество chunks для контекста
             similarity_threshold: Минимальный порог similarity
             temperature: Температура генерации GPT
+            max_tokens: Максимальное количество токенов в ответе
             filter_cr_ids: Фильтр по CR ID
             filter_icd_codes: Фильтр по кодам МКБ-10
             user_id: ID пользователя Telegram
@@ -515,7 +517,8 @@ class RAGSystem:
         generation_result = self.generate_answer(
             query=query,
             context=context,
-            temperature=temperature
+            temperature=temperature,
+            max_tokens=max_tokens
         )
         
         # 4. Извлечение источников (только топ-5 КР по наивысшей similarity)
