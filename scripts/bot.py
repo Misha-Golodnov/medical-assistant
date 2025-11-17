@@ -9,7 +9,7 @@ import logging
 import asyncio
 from typing import Optional
 from dotenv import load_dotenv
-from telegram import Update
+from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -48,6 +48,7 @@ class MedicalAssistantBot:
         Args:
             token: Telegram Bot API токен
         """
+        self.waiting_for_code = {}  # {user_id: True/False}
         self.token = token
         self.rag = None
         
@@ -90,13 +91,18 @@ class MedicalAssistantBot:
 Информация из официальных клинических рекомендаций для специалистов.
 Окончательные решения принимает лечащий врач!
 
-📖 <b>Команды:</b>
-/help - справка
-/find &lt;код&gt; - поиск по коду МКБ-10
+📖 <b>Используйте кнопки ниже для быстрого доступа к командам</b>
 """
+        # Создаем клавиатуру с кнопками
+        keyboard = [
+            [KeyboardButton("📖 Справка"), KeyboardButton("🔍 Поиск по коду")],
+        ]
+        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+        
         await update.message.reply_text(
             welcome_message,
-            parse_mode=ParseMode.HTML
+            parse_mode=ParseMode.HTML,
+            reply_markup=reply_markup
         )
     
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -173,6 +179,43 @@ class MedicalAssistantBot:
         query = update.message.text.strip()
         
         if not query:
+            return
+        
+        # Обработка кнопок
+        if query == "📖 Справка":
+            user_id = update.effective_user.id
+            self.waiting_for_code[user_id] = False
+            await self.help_command(update, context)
+            return
+        
+        if query == "❌ Отмена":
+            user_id = update.effective_user.id
+            self.waiting_for_code[user_id] = False
+            keyboard = [
+                [KeyboardButton("📖 Справка"), KeyboardButton("🔍 Поиск по коду")],
+            ]
+            reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+            await update.message.reply_text(
+                "❌ Отменено. Чем могу помочь?",
+                reply_markup=reply_markup
+            )
+            return
+        
+        if query == "🔍 Поиск по коду":
+            user_id = update.effective_user.id
+            self.waiting_for_code[user_id] = True
+            await update.message.reply_text(
+                "🔍 Введите код МКБ-10\n\n"
+                "Примеры:\n"
+                "• I21 - инфаркт миокарда\n"
+                "• I21.0 - уточненный код\n"
+                "• G40 - эпилепсия\n\n"
+                "Просто напишите код, без команд!",
+                reply_markup=ReplyKeyboardMarkup(
+                    [[KeyboardButton("📖 Справка"), KeyboardButton("❌ Отмена")]],
+                    resize_keyboard=True
+                )
+            )
             return
         
         # Автоопределение кодов МКБ-10
