@@ -187,23 +187,26 @@ class RAGSystem:
             params.append(filter_cr_ids)
         
         if filter_icd_codes:
-            # Поддержка поиска по базовому коду (I21 -> I21.*)
+            # Поддержка поиска по базовому коду (I21 -> I21, I21.*, и т.д.)
             # Создаем условие для каждого кода: точное совпадение ИЛИ префикс с точкой
             icd_conditions = []
             for icd_code in filter_icd_codes:
-                # Если код без точки (например I21), ищем I21.*
-                # Если код с точкой (например I21.0), ищем точное совпадение
+                # Если код без точки (например I11, I21), ищем:
+                #   1. Точное совпадение (I11)
+                #   2. Коды с подкатегориями (I11.0, I11.1, I21.0, I21.1, и т.д.)
+                # Если код с точкой (например I21.0), ищем только точное совпадение
                 if '.' in icd_code:
-                    # Точное совпадение
+                    # Точное совпадение для кодов с подкатегорией
                     icd_conditions.append(f"%s = ANY(m.icd_codes)")
                     params.append(icd_code)
                 else:
-                    # Поиск по префиксу: I21 должен найти I21.0, I21.1, и т.д.
-                    # Используем EXISTS с unnest для проверки префикса
+                    # Для базовых кодов: точное совпадение ИЛИ префикс
+                    # Например, I11 найдет: I11, I11.0, I11.1, I11.9
                     icd_conditions.append(
-                        f"EXISTS (SELECT 1 FROM unnest(m.icd_codes) AS code WHERE code LIKE %s)"
+                        f"EXISTS (SELECT 1 FROM unnest(m.icd_codes) AS code WHERE code = %s OR code LIKE %s)"
                     )
-                    params.append(f"{icd_code}.%")
+                    params.append(icd_code)  # точное совпадение
+                    params.append(f"{icd_code}.%")  # префикс с точкой
             
             if icd_conditions:
                 sql_parts.append(f"AND ({' OR '.join(icd_conditions)})")
